@@ -17,7 +17,7 @@
         <tr>
             @foreach ($dataproduk as $produk)
                 <td class="text-center" style="border: 1px solid #333;">
-                    <p>{{ $produk->nama_produk }} - Rp. {{ format_uang($produk->harga_jual) }}</p>
+                    <p>{{ $produk->nama_produk }} - Rp. {{ format_uang($produk->harga_jual_eceran) }}</p>
                     <img src="data:image/png;base64,{{ DNS1D::getBarcodePNG($produk->kode_produk, 'C39') }}" 
                         alt="{{ $produk->kode_produk }}"
                         width="180"

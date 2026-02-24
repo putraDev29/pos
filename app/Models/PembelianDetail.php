@@ -13,8 +13,17 @@ class PembelianDetail extends Model
     protected $primaryKey = 'id_pembelian_detail';
     protected $guarded = [];
 
-    public function produk()
-    {
-        return $this->hasOne(Produk::class, 'id_produk', 'id_produk');
-    }
+    protected $fillable = [
+        'id_pembelian',
+        'id_produk',
+        'harga_beli',
+        'jumlah',
+        'subtotal',
+    ];
+
+   public function produk()
+{
+    return $this->belongsTo(Produk::class, 'id_produk', 'id_produk');
+}
+
 }

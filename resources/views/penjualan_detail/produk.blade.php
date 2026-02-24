@@ -14,6 +14,13 @@
         }
     }
 
+    .produk-card img {
+        display: block;
+        margin: 0 auto 10px auto;
+        max-height: 120px;
+        object-fit: contain;
+    }
+
     .produk-grid {
         display: flex;
         flex-wrap: wrap;
@@ -78,13 +85,50 @@
                 <div class="produk-grid" id="produkGrid">
                     @foreach ($produk as $item)
                     <div class="produk-card" data-nama="{{ strtolower($item->nama_produk) }}">
-                        <h5>{{ $item->nama_produk }}</h5>
-                        <div class="harga">Harga: <strong>Rp {{ number_format($item->harga_jual, 0, ',', '.') }}</strong></div>
-                        <div class="stok">Stok: {{ $item->stok }}</div>
-                        <button class="btn btn-primary btn-xs btn-block"
-                            onclick="pilihProduk('{{ $item->id_produk }}', '{{ $item->kode_produk }}')">
-                            <i class="fa fa-check-circle"></i> Pilih
-                        </button>
+
+                        {{-- Gambar --}}
+                        @if ($item->gambar)
+                        <img src="{{ asset($item->gambar) }}" class="img-thumbnail">
+                        @else
+                        <img src="{{ asset('img/no_images.png') }}" class="img-thumbnail">
+                        @endif
+
+                        <h5 class="text-center">{{ $item->nama_produk }}</h5>
+                        <div class="stok text-center">Stok: {{ $item->stok_total }}</div>
+
+                        {{-- Loop Semua Level Harga --}}
+                        @php
+                        $colors = ['primary','success','warning','info','danger'];
+                        @endphp
+
+                        <div class="dropdown mb-2">
+                            <button class="btn btn-secondary btn-xs btn-block dropdown-toggle"
+                                type="button"
+                                data-toggle="dropdown"
+                                aria-haspopup="true"
+                                aria-expanded="false">
+                                Pilih Level Harga
+                            </button>
+
+                            <div class="dropdown-menu w-100">
+                                @foreach($item->levelHarga as $index => $level)
+                                <a href="javascript:void(0)"
+                                    class="dropdown-item text-{{ $colors[$index % count($colors)] }}"
+                                    onclick="pilihProduk(
+                    '{{ $item->id_produk }}',
+                    '{{ $item->kode_produk }}',
+                    '{{ $level->nama_level }}',
+                    '{{ $level->harga_jual }}'
+               )">
+
+                                    {{ ucfirst($level->nama_level) }}
+                                    (Rp {{ number_format($level->harga_jual, 0, ',', '.') }})
+
+                                </a>
+                                @endforeach
+                            </div>
+                        </div>
+
                     </div>
                     @endforeach
                 </div>
@@ -111,4 +155,15 @@
             });
         });
     });
+
+    function pilihProduk(id, kode, level, harga) {
+
+        console.log("Produk:", id);
+        console.log("Level:", level);
+        console.log("Harga:", harga);
+
+        // contoh isi input
+        $('#produk_id').val(id);
+        $('#harga').val(harga);
+    }
 </script>

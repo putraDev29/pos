@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,11 +34,11 @@
                 size: 75mm 
     ';
     ?>
-    <?php 
-    $style .= 
+    <?php
+    $style .=
         ! empty($_COOKIE['innerHeight'])
-            ? $_COOKIE['innerHeight'] .'mm; }'
-            : '}';
+        ? $_COOKIE['innerHeight'] . 'mm; }'
+        : '}';
     ?>
     <?php
     $style .= '
@@ -54,6 +55,7 @@
 
     {!! $style !!}
 </head>
+
 <body onload="window.print()">
     <button class="btn-print" style="position: absolute; right: 1rem; top: rem;" onclick="window.print()">Print</button>
     <div class="text-center">
@@ -68,18 +70,18 @@
     <div class="clear-both" style="clear: both;"></div>
     <p>No: {{ tambah_nol_didepan($penjualan->id_penjualan, 10) }}</p>
     <p class="text-center">===================================</p>
-    
+
     <br>
     <table width="100%" style="border: 0;">
         @foreach ($detail as $item)
-            <tr>
-                <td colspan="3">{{ $item->produk->nama_produk }}</td>
-            </tr>
-            <tr>
-                <td>{{ $item->jumlah }} x {{ format_uang($item->harga_jual) }}</td>
-                <td></td>
-                <td class="text-right">{{ format_uang($item->jumlah * $item->harga_jual) }}</td>
-            </tr>
+        <tr>
+            <td colspan="3">{{ $item->produk->nama_produk }}</td>
+        </tr>
+        <tr>
+            <td>{{ $item->jumlah }} x {{ format_uang($item->harga_jual_eceran) }}</td>
+            <td></td>
+            <td class="text-right">{{ format_uang($item->jumlah * $item->harga_jual_eceran) }}</td>
+        </tr>
         @endforeach
     </table>
     <p class="text-center">-----------------------------------</p>
@@ -118,12 +120,58 @@
         let body = document.body;
         let html = document.documentElement;
         let height = Math.max(
-                body.scrollHeight, body.offsetHeight,
-                html.clientHeight, html.scrollHeight, html.offsetHeight
-            );
+            body.scrollHeight, body.offsetHeight,
+            html.clientHeight, html.scrollHeight, html.offsetHeight
+        );
 
         document.cookie = "innerHeight=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        document.cookie = "innerHeight="+ ((height + 50) * 0.264583);
+        document.cookie = "innerHeight=" + ((height + 50) * 0.264583);
     </script>
 </body>
+
 </html>
+<script>
+    function printNota() {
+   let esc = '\x1B';      // ESC
+    let init = esc + '@';  // Reset
+    let center = esc + 'a' + '\x01'; // Align center
+    let left = esc + 'a' + '\x00'; // Align left
+
+    let struk = `
+${init}${center}
+{{ strtoupper($setting->nama_perusahaan) }}
+{{ strtoupper($setting->alamat) }}
+
+${left}
+Tanggal : {{ date('d-m-Y') }}
+Kasir   : {{ strtoupper(auth()->user()->name) }}
+No Nota : {{ tambah_nol_didepan($penjualan->id_penjualan, 10) }}
+----------------------------------------
+@foreach ($detail as $item)
+{{ $item->produk->nama_produk }}
+{{ $item->jumlah }} x {{ format_uang($item->harga_jual_eceran) }}  {{ format_uang($item->jumlah * $item->harga_jual_eceran) }}
+@endforeach
+----------------------------------------
+Total Harga : {{ format_uang($penjualan->total_harga) }}
+Total Item  : {{ format_uang($penjualan->total_item) }}
+Diskon      : {{ format_uang($penjualan->diskon) }}
+Total Bayar : {{ format_uang($penjualan->bayar) }}
+Diterima    : {{ format_uang($penjualan->diterima) }}
+Kembali     : {{ format_uang($penjualan->diterima - $penjualan->bayar) }}
+----------------------------------------
+${center}
+       TERIMA KASIH
+`;
+
+        if (typeof Android !== "undefined" && Android.printBluetooth) {
+            Android.printBluetooth(struk);
+        } else {
+            alert("Bluetooth printer tidak tersedia.");
+        }
+    }
+
+    // Auto jalankan saat halaman selesai dimuat
+    window.onload = function() {
+        printNota();
+    };
+</script>

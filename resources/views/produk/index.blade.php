@@ -1,12 +1,12 @@
 @extends('layouts.master')
 
 @section('title')
-    Daftar Produk
+Daftar Produk
 @endsection
 
 @section('breadcrumb')
-    @parent
-    <li class="active">Daftar Produk</li>
+@parent
+<li class="active">Daftar Produk</li>
 @endsection
 
 @section('content')
@@ -35,6 +35,7 @@
                             <th>Merk</th>
                             <th>Harga Beli</th>
                             <th>Harga Jual</th>
+                            <th>Harga Grosir</th>
                             <th>Diskon</th>
                             <th>Stok</th>
                             <th width="15%"><i class="fa fa-cog"></i></th>
@@ -53,43 +54,89 @@
 <script>
     let table;
 
-    $(function () {
+    $(function() {
         table = $('.table').DataTable({
             processing: true,
             autoWidth: false,
             ajax: {
                 url: '{{ route('produk.data') }}',
             },
-            columns: [
-                {data: 'select_all', searchable: false, sortable: false},
-                {data: 'DT_RowIndex', searchable: false, sortable: false},
-                {data: 'kode_produk'},
-                {data: 'nama_produk'},
-                {data: 'nama_kategori'},
-                {data: 'merk'},
-                {data: 'harga_beli'},
-                {data: 'harga_jual'},
-                {data: 'diskon'},
-                {data: 'stok'},
-                {data: 'aksi', searchable: false, sortable: false},
+            columns: [{
+                    data: 'select_all',
+                    searchable: false,
+                    sortable: false
+                },
+                {
+                    data: 'DT_RowIndex',
+                    searchable: false,
+                    sortable: false
+                },
+                {
+                    data: 'kode_produk'
+                },
+                {
+                    data: 'nama_produk'
+                },
+                {
+                    data: 'nama_kategori'
+                },
+                {
+                    data: 'merk'
+                },
+                {
+                    data: 'harga_beli'
+                },
+                {
+                    data: 'harga_jual_eceran'
+                },
+                {
+                    data: 'harga_jual_grosir'
+                },
+                {
+                    data: 'diskon'
+                },
+                {
+                    data: 'stok'
+                },
+                {
+                    data: 'aksi',
+                    searchable: false,
+                    sortable: false
+                },
             ]
         });
 
-        $('#modal-form').validator().on('submit', function (e) {
-            if (! e.preventDefault()) {
-                $.post($('#modal-form form').attr('action'), $('#modal-form form').serialize())
-                    .done((response) => {
-                        $('#modal-form').modal('hide');
-                        table.ajax.reload();
-                    })
-                    .fail((errors) => {
-                        alert('Tidak dapat menyimpan data');
-                        return;
-                    });
-            }
+        $('#modal-form').validator().on('submit', function(e) {
+            e.preventDefault(); // WAJIB: cegah submit default
+
+            let form = $('#modal-form form')[0]; // ambil DOM element form
+            let formData = new FormData(form); // buat FormData dari form
+            console.log('FORMDATA', formData)
+            $('#form-loading').show()
+            // $('#modal-form button[type=submit]').prop('disabled', true)
+
+            $.ajax({
+                url: $(form).attr('action'),
+                method: $(form).attr('method'),
+                data: formData,
+                processData: false, // agar tidak ubah data ke URL-encoded
+                contentType: false, // agar browser set multipart/form-data
+                success: function(response) {
+                    $('#modal-form').modal('hide');
+                    table.ajax.reload();
+                    $('#form-loading').hide()
+                    resetForm()
+                    // $('#modal-form button[type=submit]').prop('disabled', false)
+                },
+                error: function(errors) {
+                    alert('Tidak dapat menyimpan data');
+                    $('#form-loading').hide()
+                    // $('#modal-form button[type=submit]').prop('disabled', false)
+                }
+            });
         });
 
-        $('[name=select_all]').on('click', function () {
+        $('[name=select_all]').on('click', function() {
             $(':checkbox').prop('checked', this.checked);
         });
     });
@@ -115,13 +162,47 @@
 
         $.get(url)
             .done((response) => {
+                console.log('RESPONSE', response)
                 $('#modal-form [name=nama_produk]').val(response.nama_produk);
                 $('#modal-form [name=id_kategori]').val(response.id_kategori);
                 $('#modal-form [name=merk]').val(response.merk);
                 $('#modal-form [name=harga_beli]').val(response.harga_beli);
-                $('#modal-form [name=harga_jual]').val(response.harga_jual);
+                $('#modal-form [name=harga_jual_eceran]').val(response.harga_jual_eceran);
+                $('#modal-form [name=harga_jual_grosir]').val(response.harga_jual_grosir);
                 $('#modal-form [name=diskon]').val(response.diskon);
                 $('#modal-form [name=stok]').val(response.stok);
+
+                if (response.level_harga && response.level_harga.length > 0) {
+
+                    response.level_harga.forEach(function(level) {
+
+                        $('#level-container')
+                            .append(createLevelRow(levelIndex, level));
+
+                        let box = $('.level-box').last();
+
+                        box.find(`select[name="level[${levelIndex}][satuan_id]"]`)
+                            .val(level.satuan_id);
+
+                        levelIndex++;
+                    });
+
+                } else {
+                    $('#add-level').click();
+                }
+
+                if (response.gambar && response.gambar !== '') {
+
+                    let imagePath = "{{ asset('') }}" + response.gambar;
+
+                    $('#preview-image')
+                        .attr('src', imagePath)
+                        .show();
+
+                } else {
+
+                    $('#preview-image').hide();
+                }
             })
             .fail((errors) => {
                 alert('Tidak dapat menampilkan data');

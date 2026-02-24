@@ -12,7 +12,7 @@
                 <a href="#"><i class="fa fa-circle text-success"></i> Online</a>
             </div>
         </div>
-        
+
         <!-- /.search form -->
         <!-- sidebar menu: : style can be found in sidebar.less -->
         <ul class="sidebar-menu" data-widget="tree">
@@ -35,11 +35,6 @@
                 </a>
             </li>
             <li>
-                <a href="{{ route('member.index') }}">
-                    <i class="fa fa-id-card"></i> <span>Member</span>
-                </a>
-            </li>
-            <li>
                 <a href="{{ route('supplier.index') }}">
                     <i class="fa fa-truck"></i> <span>Supplier</span>
                 </a>
@@ -51,18 +46,18 @@
                 </a>
             </li>
             <li>
-                <a href="{{ route('pembelian.index') }}">
-                    <i class="fa fa-download"></i> <span>Pembelian</span>
+                <a href="{{ route('penjualan.index') }}">
+                    <i class="fa fa-shopping-cart"></i> <span>Penjualan</span>
                 </a>
             </li>
             <li>
-                <a href="{{ route('penjualan.index') }}">
-                    <i class="fa fa-upload"></i> <span>Penjualan</span>
+                <a href="{{ route('pembelian.index') }}">
+                    <i class="fa fa-truck"></i> <span>Pembelian</span>
                 </a>
             </li>
             <li>
                 <a href="{{ route('transaksi.index') }}">
-                    <i class="fa fa-cart-arrow-down"></i> <span>Transaksi Aktif</span>
+                    <i class="fa fa-shopping-basket"></i> <span>Transaksi Aktif</span>
                 </a>
             </li>
             <li>
@@ -83,14 +78,14 @@
                 </a>
             </li>
             <li>
-                <a href="{{ route("setting.index") }}">
+                <a href="{{ route('setting.index') }}">
                     <i class="fa fa-cogs"></i> <span>Pengaturan</span>
                 </a>
             </li>
             @else
             <li>
                 <a href="{{ route('transaksi.index') }}">
-                    <i class="fa fa-cart-arrow-down"></i> <span>Transaksi Aktif</span>
+                    <i class="fa fa-shopping-basket"></i> <span>Transaksi Aktif</span>
                 </a>
             </li>
             <li>

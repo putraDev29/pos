@@ -8,12 +8,44 @@ use App\Models\PenjualanDetail;
 use App\Models\Produk;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PenjualanDetailController extends Controller
 {
     public function index()
     {
-        $produk = Produk::orderBy('nama_produk')->get();
+        $produk = Produk::with('levelHarga')
+            ->select('produk.*')
+
+            // Total stok yang masih ada
+            ->selectSub(function ($q) {
+                $q->from('stok_barang')
+                    ->whereColumn('stok_barang.id_produk', 'produk.id_produk')
+                    ->where('stok_sisa', '>', 0)
+                    ->selectRaw('COALESCE(SUM(stok_sisa),0)');
+            }, 'stok_total')
+
+            // Ambil created_at paling awal yang stoknya masih ada
+            ->selectSub(function ($q) {
+                $q->from('stok_barang')
+                    ->whereColumn('stok_barang.id_produk', 'produk.id_produk')
+                    ->where('stok_sisa', '>', 0)
+                    ->selectRaw('MIN(created_at)');
+            }, 'first_stok_created')
+
+            // Ambil id_pembelian_detail paling awal yang stoknya masih ada
+            ->selectSub(function ($q) {
+                $q->from('stok_barang')
+                    ->whereColumn('stok_barang.id_produk', 'produk.id_produk')
+                    ->where('stok_sisa', '>', 0)
+                    ->orderBy('created_at', 'asc')
+                    ->limit(1)
+                    ->select('id_pembelian_detail');
+            }, 'id_pembelian_detail')
+
+            ->orderByRaw('first_stok_created IS NULL, first_stok_created ASC')
+            ->get();
+
         $member = Member::orderBy('nama')->get();
         $diskon = Setting::first()->diskon ?? 0;
 
@@ -47,19 +79,32 @@ class PenjualanDetailController extends Controller
                 continue; // skip jika produk null atau nama kosong
             }
 
+            // Deteksi label harga
+            $labelHarga = '';
+            if ($item->harga_jual_eceran == $item->produk->harga_jual_grosir) {
+                $labelHarga = ' (Grosir)';
+            } else {
+                $labelHarga = ' (Eceran)';
+            }
+
             $row = array();
             $row['kode_produk'] = '<span class="label label-success">' . $item->produk['kode_produk'] . '</span>';
             $row['nama_produk'] = $item->produk['nama_produk'];
-            $row['harga_jual']  = 'Rp. ' . format_uang($item->harga_jual);
+            $row['harga_jual_eceran']  = 'Rp. ' . format_uang($item->harga_jual_eceran) . $labelHarga;
             $row['jumlah']      = '<input type="number" class="form-control input-sm quantity" data-id="' . $item->id_penjualan_detail . '" value="' . $item->jumlah . '">';
-            $row['diskon']      = $item->diskon . '%';
-            $row['subtotal']    = 'Rp. ' . format_uang($item->subtotal);
+            $diskonPersen = min($item->produk['diskon'] ?? 0, 100);
+
+            $subtotalAfterDiskon = $item->subtotal - (($diskonPersen / 100) * $item->subtotal);
+            $subtotalAfterDiskon = max($subtotalAfterDiskon, 0);
+
+            $row['diskon']   = $diskonPersen . '%';
+            $row['subtotal'] = 'Rp. ' . format_uang($subtotalAfterDiskon);
             $row['aksi']        = '<div class="btn-group">
-                                <button onclick="deleteData(`' . route('transaksi.destroy', $item->id_penjualan_detail) . '`)" class="btn btn-xs btn-danger btn-flat"><i class="fa fa-trash"></i></button>
-                            </div>';
+                                    <button onclick="deleteData(`' . route('transaksi.destroy', $item->id_penjualan_detail) . '`)" class="btn btn-xs btn-danger btn-flat"><i class="fa fa-trash"></i></button>
+                                </div>';
             $data[] = $row;
 
-            $total += $item->harga_jual * $item->jumlah;
+            $total += $subtotalAfterDiskon;
             $total_item += $item->jumlah;
         }
 
@@ -69,7 +114,7 @@ class PenjualanDetailController extends Controller
             <div class="total hide">' . $total . '</div>
             <div class="total_item hide">' . $total_item . '</div>',
             'nama_produk' => '',
-            'harga_jual'  => '',
+            'harga_jual_eceran'  => '',
             'jumlah'      => '',
             'diskon'      => '',
             'subtotal'    => '',
@@ -90,13 +135,19 @@ class PenjualanDetailController extends Controller
             return response()->json('Data gagal disimpan', 400);
         }
 
+        $hargaType = $request->harga_type ?? 'eceran';
+
+        $harga = $hargaType === 'grosir'
+            ? $produk->harga_jual_grosir
+            : $produk->harga_jual_eceran;
+
         $detail = new PenjualanDetail();
         $detail->id_penjualan = $request->id_penjualan;
         $detail->id_produk = $produk->id_produk;
-        $detail->harga_jual = $produk->harga_jual;
+        $detail->harga_jual_eceran = $harga;
         $detail->jumlah = 1;
         $detail->diskon = 0;
-        $detail->subtotal = $produk->harga_jual;
+        $detail->subtotal = $harga;
         $detail->save();
 
         return response()->json('Data berhasil disimpan', 200);
@@ -106,7 +157,7 @@ class PenjualanDetailController extends Controller
     {
         $detail = PenjualanDetail::find($id);
         $detail->jumlah = (float) $request->jumlah;
-        $detail->subtotal = (float) $detail->harga_jual * (float) $request->jumlah;
+        $detail->subtotal = (float) $detail->harga_jual_eceran * (float) $request->jumlah;
         $detail->update();
     }
 

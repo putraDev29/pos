@@ -12,4 +12,9 @@ class Produk extends Model
     protected $table = 'produk';
     protected $primaryKey = 'id_produk';
     protected $guarded = [];
+
+    public function levelHarga()
+    {
+        return $this->hasMany(ProdukHarga::class, 'produk_id', 'id_produk');
+    }
 }

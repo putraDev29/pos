@@ -21,7 +21,11 @@ Transaksi Penjualan
         display: none;
     }
 
-    @media(max-width: 768px) {
+    .btn-checkout-mobile {
+        display: none;
+    }
+
+    @media(max-width: 1024px) {
         .tampil-bayar {
             font-size: 2em;
             height: 70px;
@@ -78,6 +82,7 @@ Transaksi Penjualan
                             <div class="input-group">
                                 <input type="hidden" name="id_penjualan" id="id_penjualan" value="{{ $id_penjualan }}">
                                 <input type="hidden" name="id_produk" id="id_produk">
+                                <input type="hidden" name="harga_type" id="harga_type">
                                 <input type="text" class="form-control" name="kode_produk" id="kode_produk">
                                 <span class="input-group-btn">
                                     <button onclick="tampilProduk()" class="btn btn-info btn-flat" type="button"><i class="fa fa-arrow-right"></i></button>
@@ -103,17 +108,19 @@ Transaksi Penjualan
                 <button class="btn btn-success btn-checkout-mobile d-md-none" id="btn-toggle-checkout" onclick="toggleCheckout()">Checkout</button>
 
                 <div id="form-bayar-container" class="row">
-                    <div class="col-lg-8">
+                    <div class="col-lg-6">
                         <div class="tampil-bayar bg-primary"></div>
                         <div class="tampil-terbilang"></div>
                     </div>
-                    <div class="col-lg-4">
+                    <div class="col-lg-6">
                         <form action="{{ route('transaksi.simpan') }}" class="form-penjualan" method="post">
                             @csrf
                             <input type="hidden" name="id_penjualan" value="{{ $id_penjualan }}">
+                            <input type="hidden" name="id_pembelian_detail" id="id_pembelian_detail">
                             <input type="hidden" name="total" id="total">
                             <input type="hidden" name="total_item" id="total_item">
                             <input type="hidden" name="bayar" id="bayar">
+                            <input type="hidden" name="harga_type" id="harga_type">
                             <input type="hidden" name="id_member" id="id_member" value="{{ $memberSelected->id_member }}">
 
                             <div class="form-group row">
@@ -133,10 +140,10 @@ Transaksi Penjualan
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-group row" style="display: none;">
-                                <label for="diskon" class="col-lg-2 control-label">Diskon</label>
+                            <div class="form-group row">
+                                <label for="diskon" class="col-lg-2 control-label">Diskon %</label>
                                 <div class="col-lg-8">
-                                    <input type="number" name="diskon" id="diskon" class="form-control" value="{{ ! empty($memberSelected->id_member) ? $diskon : 0 }}" readonly>
+                                    <input type="number" name="diskon" id="diskon" class="form-control" value="0">
                                 </div>
                             </div>
                             <div class="form-group row" style="display: none;">
@@ -145,27 +152,48 @@ Transaksi Penjualan
                                     <input type="text" id="bayarrp" class="form-control" readonly>
                                 </div>
                             </div>
+
                             <div class="form-group row">
-                                <label for="diterima_display" class="col-lg-2 control-label">Diterima</label>
+                                <label class="col-lg-2 control-label">Metode Pembayaran</label>
                                 <div class="col-lg-8">
-                                    <input type="text" id="diterima_display" class="form-control"
-                                        value="{{ number_format($penjualan->diterima ?? 0, 0, ',', '.') }}">
-                                    <input type="hidden" id="diterima" name="diterima" value="{{ $penjualan->diterima ?? 0 }}">
+                                    <select name="metode_pembayaran" id="metode_pembayaran" class="form-control">
+                                        <option value="cash" selected>Cash</option>
+                                        <option value="qris">QRIS</option>
+                                    </select>
                                 </div>
                             </div>
 
-                            <div class="form-group row">
-                                <label for="kembali" class="col-lg-2 control-label">Kembali</label>
+                            <div class="form-group row d-none" id="field-qris">
+                                <label class="col-lg-2 control-label">QRIS</label>
                                 <div class="col-lg-8">
-                                    <input type="text" id="kembali" name="kembali" class="form-control" value="0" readonly>
+                                    <img src="{{ asset('img/qris.png') }}" class="img-fluid" style="max-width:300px;">
                                 </div>
+                            </div>
+
+                            <div id="field-cash">
+
+                                <div class="form-group row">
+                                    <label for="diterima_display" class="col-lg-2 control-label">Diterima</label>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="diterima_display" class="form-control" value="0">
+                                        <input type="hidden" id="diterima" name="diterima" value="0">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="kembali" class="col-lg-2 control-label">Kembali</label>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="kembali" name="kembali" class="form-control" value="0" readonly>
+                                    </div>
+                                </div>
+
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
 
-            <div class="box-footer" id="box-footer" style="display: none;">
+            <div class="box-footer" id="box-footer">
                 <button type="submit" class="btn btn-primary btn-sm btn-flat pull-right btn-simpan"><i class="fa fa-floppy-o"></i> Simpan Transaksi</button>
             </div>
         </div>
@@ -179,34 +207,53 @@ Transaksi Penjualan
 @push('scripts')
 <script>
     let table, table2;
-    $(function () {
+    $(function() {
         $('body').addClass('sidebar-collapse');
 
         table = $('.table-penjualan').DataTable({
             processing: true,
             autoWidth: false,
-            ajax: '{{ route('transaksi.data', $id_penjualan) }}',
-            columns: [
-                { data: 'DT_RowIndex', searchable: false, sortable: false },
-                { data: 'kode_produk' },
-                { data: 'nama_produk' },
-                { data: 'harga_jual' },
-                { data: 'jumlah' },
-                { data: 'diskon' },
-                { data: 'subtotal' },
-                { data: 'aksi', searchable: false, sortable: false },
+            ajax: '{{ route("transaksi.data", $id_penjualan) }}',
+            columns: [{
+                    data: 'DT_RowIndex',
+                    searchable: false,
+                    sortable: false
+                },
+                {
+                    data: 'kode_produk'
+                },
+                {
+                    data: 'nama_produk'
+                },
+                {
+                    data: 'harga_jual_eceran'
+                },
+                {
+                    data: 'jumlah'
+                },
+                {
+                    data: 'diskon'
+                },
+                {
+                    data: 'subtotal'
+                },
+                {
+                    data: 'aksi',
+                    searchable: false,
+                    sortable: false
+                },
             ],
             dom: 'Brt',
             bSort: false,
             paginate: false
-        }).on('draw.dt', function () {
+        }).on('draw.dt', function() {
             loadForm($('#diskon').val());
             setTimeout(() => $('#diterima_display').trigger('input'), 300);
         });
 
         table2 = $('.table-produk').DataTable();
 
-        $(document).on('input', '.quantity', function () {
+        $(document).on('input', '.quantity', function() {
             let id = $(this).data('id');
             let jumlah = parseInt($(this).val());
             if (jumlah < 1 || jumlah > 10000) {
@@ -223,30 +270,41 @@ Transaksi Penjualan
             }).fail(() => alert('Tidak dapat menyimpan data'));
         });
 
-        $('#diskon').on('input', function () {
+        $('#diskon').on('input', function() {
             if ($(this).val() == "") $(this).val(0).select();
             loadForm($(this).val());
         });
 
-        $('#diterima_display').on('input', function () {
+        $('#diterima_display').on('input', function() {
             let val = $(this).val().replace(/[^0-9]/g, '');
             $('#diterima').val(val);
             $(this).val(formatRupiah(val));
-            if( $('#diterima').val(val))
+            if ($('#diterima').val(val))
                 loadForm($('#diskon').val(), val || 0);
-        }).focus(function () {
+        }).focus(function() {
             $(this).select();
         });
 
-        $('.btn-simpan').on('click', function () {
+        $('.btn-simpan').on('click', function() {
             $('.form-penjualan').submit();
         });
     });
 
-    function tampilProduk() { $('#modal-produk').modal('show'); }
-    function hideProduk() { $('#modal-produk').modal('hide'); }
-    function tampilMember() { $('#modal-member').modal('show'); }
-    function hideMember() { $('#modal-member').modal('hide'); }
+    function tampilProduk() {
+        $('#modal-produk').modal('show');
+    }
+
+    function hideProduk() {
+        $('#modal-produk').modal('hide');
+    }
+
+    function tampilMember() {
+        $('#modal-member').modal('show');
+    }
+
+    function hideMember() {
+        $('#modal-member').modal('hide');
+    }
 
     function toggleCheckout() {
         const $produkForm = $('#form-produks');
@@ -259,8 +317,8 @@ Transaksi Penjualan
             $produkTable.show();
             $formBayar.hide();
             $button.text('Checkout')
-                   .removeClass('btn-danger')
-                   .addClass('btn-success');
+                .removeClass('btn-danger')
+                .addClass('btn-success');
             $('#box-footer').hide();
         } else {
             $('#box-footer').show();
@@ -268,15 +326,20 @@ Transaksi Penjualan
             $produkTable.hide();
             $formBayar.show();
             $button.text('Kembali ke Produk')
-                   .removeClass('btn-success')
-                   .addClass('btn-danger');
+                .removeClass('btn-success')
+                .addClass('btn-danger');
 
             // $('#diterima_display').focus();
         }
     }
 
-    function pilihProduk(id, kode) {
+    function pilihProduk(id, kode, type, idpembeliandetail) {
         $('#id_produk').val(id);
+        if (!$('#harga_type').length) {
+            $('#form-produks').append(`<input type="hidden" name="harga_type" id="harga_type">`);
+        }
+        $('#harga_type').val(type);
+        $('#id_pembelian_detail').val(idpembeliandetail);
         hideProduk();
         tambahProduk();
         if ($(window).width() <= 768) $('#form-bayar-container').slideUp();
@@ -340,5 +403,40 @@ Transaksi Penjualan
         rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
         return rupiah;
     }
+
+    function toggleMetodePembayaran() {
+        let metode = $('#metode_pembayaran').val();
+
+        if (metode === 'qris') {
+            $('#field-cash').hide();
+            $('#field-qris').show();
+
+            // otomatis bayar pas
+            let total = $('#bayar').val() || 0;
+            $('#diterima').val(total);
+            loadForm($('#diskon').val(), total);
+
+        } else {
+            $('#field-cash').show();
+            $('#field-qris').hide();
+        }
+    }
+
+    $('#metode_pembayaran').on('change', function() {
+        toggleMetodePembayaran();
+    });
+
+    toggleMetodePembayaran(); // jalankan saat load
 </script>
+@if(session('success'))
+<script>
+    alert("{{ session('success') }}");
+</script>
+@endif
+
+@if(session('error'))
+<script>
+    alert("{{ session('error') }}");
+</script>
+@endif
 @endpush

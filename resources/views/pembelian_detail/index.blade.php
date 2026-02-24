@@ -96,6 +96,7 @@
                         <form action="{{ route('pembelian.store') }}" class="form-pembelian" method="post">
                             @csrf
                             <input type="hidden" name="id_pembelian" value="{{ $id_pembelian }}">
+                            <input type="hidden" name="id_produk_pembelian" id="id_produk_pembelian">
                             <input type="hidden" name="total" id="total">
                             <input type="hidden" name="total_item" id="total_item">
                             <input type="hidden" name="bayar" id="bayar">
@@ -164,6 +165,30 @@
         });
         table2 = $('.table-produk').DataTable();
 
+        $(document).on('input', '.harga', function () {
+
+            let id = $(this).data('id');
+            let harga = parseInt($(this).val());
+
+            if (harga < 1) {
+                alert('Harga tidak boleh 0');
+                $(this).val(1);
+                return;
+            }
+
+            $.post(`/pembelian_detail/${id}`, {
+                _token: $('[name=csrf-token]').attr('content'),
+                _method: 'put',
+                harga_beli: harga
+            })
+            .done(() => {
+                table.ajax.reload(() => loadForm($('#diskon').val()));
+            })
+            .fail(() => {
+                alert('Tidak dapat update harga');
+            });
+        });
+
         $(document).on('input', '.quantity', function () {
             let id = $(this).data('id');
             let jumlah = parseInt($(this).val());
@@ -219,6 +244,7 @@
     function pilihProduk(id, kode) {
         $('#id_produk').val(id);
         $('#kode_produk').val(kode);
+        $('#id_produk_pembelian').val(id);
         hideProduk();
         tambahProduk();
     }
