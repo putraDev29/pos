@@ -17,4 +17,14 @@ class PenjualanDetail extends Model
     {
         return $this->hasOne(Produk::class, 'id_produk', 'id_produk');
     }
+
+    public function satuan()
+    {
+        return $this->belongsTo(Satuan::class, 'satuan_id');
+    }
+
+    public function levelHarga()
+    {
+        return $this->belongsTo(ProdukHarga::class, 'id_produk_level_harga');
+    }
 }

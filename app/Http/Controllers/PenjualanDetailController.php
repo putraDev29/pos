@@ -66,7 +66,11 @@ class PenjualanDetailController extends Controller
 
     public function data($id)
     {
-        $detail = PenjualanDetail::with('produk')
+        $detail = PenjualanDetail::with([
+            'produk',
+            'levelHarga',
+            'satuan'
+        ])
             ->where('id_penjualan', $id)
             ->get();
 
@@ -79,18 +83,18 @@ class PenjualanDetailController extends Controller
                 continue; // skip jika produk null atau nama kosong
             }
 
-            // Deteksi label harga
-            $labelHarga = '';
-            if ($item->harga_jual_eceran == $item->produk->harga_jual_grosir) {
-                $labelHarga = ' (Grosir)';
-            } else {
-                $labelHarga = ' (Eceran)';
-            }
+            // // Deteksi label harga
+            // $labelHarga = '';
+            // if ($item->harga_jual_eceran == $item->produk->harga_jual_grosir) {
+            //     $labelHarga = ' (Grosir)';
+            // } else {
+            //     $labelHarga = ' (Eceran)';
+            // }
 
             $row = array();
             $row['kode_produk'] = '<span class="label label-success">' . $item->produk['kode_produk'] . '</span>';
             $row['nama_produk'] = $item->produk['nama_produk'];
-            $row['harga_jual_eceran']  = 'Rp. ' . format_uang($item->harga_jual_eceran) . $labelHarga;
+            $row['harga_jual_eceran']  = 'Rp. ' . format_uang($item->harga_jual_eceran) . $item->satuan['id'];
             $row['jumlah']      = '<input type="number" class="form-control input-sm quantity" data-id="' . $item->id_penjualan_detail . '" value="' . $item->jumlah . '">';
             $diskonPersen = min($item->produk['diskon'] ?? 0, 100);
 
@@ -130,24 +134,20 @@ class PenjualanDetailController extends Controller
 
     public function store(Request $request)
     {
+
         $produk = Produk::where('id_produk', $request->id_produk)->first();
         if (! $produk) {
             return response()->json('Data gagal disimpan', 400);
         }
 
-        $hargaType = $request->harga_type ?? 'eceran';
-
-        $harga = $hargaType === 'grosir'
-            ? $produk->harga_jual_grosir
-            : $produk->harga_jual_eceran;
-
         $detail = new PenjualanDetail();
         $detail->id_penjualan = $request->id_penjualan;
         $detail->id_produk = $produk->id_produk;
-        $detail->harga_jual_eceran = $harga;
+        $detail->id_produk_level_harga = $request->id_produk_level_harga;
+        $detail->harga_jual_eceran = $request->harga_jual;
         $detail->jumlah = 1;
         $detail->diskon = 0;
-        $detail->subtotal = $harga;
+        $detail->subtotal = $request->harga_jual;
         $detail->save();
 
         return response()->json('Data berhasil disimpan', 200);

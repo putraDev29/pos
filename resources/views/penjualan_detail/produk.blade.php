@@ -68,6 +68,53 @@
     #searchInput {
         margin-bottom: 15px;
     }
+
+    .product-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .product-title {
+        font-weight: 600;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .price-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .price-btn {
+        background: #f5f7fa;
+        border: none;
+        border-radius: 10px;
+        padding: 2px;
+        cursor: pointer;
+        text-align: center;
+        transition: 0.2s ease;
+    }
+
+    .price-btn:hover {
+        background: #2563eb;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .price-level {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .price-value {
+        display: block;
+        font-size: 13px;
+    }
 </style>
 
 <div class="modal fade" id="modal-produk" tabindex="-1" role="dialog" aria-labelledby="modal-produk">
@@ -96,39 +143,29 @@
                         <h5 class="text-center">{{ $item->nama_produk }}</h5>
                         <div class="stok text-center">Stok: {{ $item->stok_total }}</div>
 
-                        {{-- Loop Semua Level Harga --}}
-                        @php
-                        $colors = ['primary','success','warning','info','danger'];
-                        @endphp
-
-                        <div class="dropdown mb-2">
-                            <button class="btn btn-secondary btn-xs btn-block dropdown-toggle"
-                                type="button"
-                                data-toggle="dropdown"
-                                aria-haspopup="true"
-                                aria-expanded="false">
-                                Pilih Level Harga
-                            </button>
-
-                            <div class="dropdown-menu w-100">
-                                @foreach($item->levelHarga as $index => $level)
-                                <a href="javascript:void(0)"
-                                    class="dropdown-item text-{{ $colors[$index % count($colors)] }}"
+                        <div>
+                            <div class="price-grid">
+                                @foreach($item->levelHarga as $level)
+                                <button class="price-btn"
                                     onclick="pilihProduk(
                     '{{ $item->id_produk }}',
                     '{{ $item->kode_produk }}',
                     '{{ $level->nama_level }}',
-                    '{{ $level->harga_jual }}'
-               )">
+                    '{{ $level->harga_jual }}',
+                    '{{ $level->satuan_id }}',
+                )">
 
-                                    {{ ucfirst($level->nama_level) }}
-                                    (Rp {{ number_format($level->harga_jual, 0, ',', '.') }})
+                                    <span class="price-level">
+                                        {{ ucfirst($level->nama_level) }}
+                                    </span>
 
-                                </a>
+                                    <span class="price-value">
+                                        Rp {{ number_format($level->harga_jual,0,',','.') }}
+                                    </span>
+                                </button>
                                 @endforeach
                             </div>
                         </div>
-
                     </div>
                     @endforeach
                 </div>
@@ -155,15 +192,4 @@
             });
         });
     });
-
-    function pilihProduk(id, kode, level, harga) {
-
-        console.log("Produk:", id);
-        console.log("Level:", level);
-        console.log("Harga:", harga);
-
-        // contoh isi input
-        $('#produk_id').val(id);
-        $('#harga').val(harga);
-    }
 </script>

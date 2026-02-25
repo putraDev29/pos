@@ -81,8 +81,10 @@ Transaksi Penjualan
                         <div class="col-lg-5">
                             <div class="input-group">
                                 <input type="hidden" name="id_penjualan" id="id_penjualan" value="{{ $id_penjualan }}">
+                                <input type="hidden" name="id_produk_level_harga" id="id_produk_level_harga">
                                 <input type="hidden" name="id_produk" id="id_produk">
                                 <input type="hidden" name="harga_type" id="harga_type">
+                                <input type="hidden" name="harga_jual" id="harga_jual">
                                 <input type="text" class="form-control" name="kode_produk" id="kode_produk">
                                 <span class="input-group-btn">
                                     <button onclick="tampilProduk()" class="btn btn-info btn-flat" type="button"><i class="fa fa-arrow-right"></i></button>
@@ -333,12 +335,14 @@ Transaksi Penjualan
         }
     }
 
-    function pilihProduk(id, kode, type, idpembeliandetail) {
+    function pilihProduk(id, kode, type, harga_jual, id_produk_level_harga, idpembeliandetail) {
         $('#id_produk').val(id);
         if (!$('#harga_type').length) {
             $('#form-produks').append(`<input type="hidden" name="harga_type" id="harga_type">`);
         }
         $('#harga_type').val(type);
+        $('#harga_jual').val(harga_jual);
+        $('#id_produk_level_harga').val(id_produk_level_harga);
         $('#id_pembelian_detail').val(idpembeliandetail);
         hideProduk();
         tambahProduk();

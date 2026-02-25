@@ -17,4 +17,10 @@ class ProdukHarga extends Model
     {
         return $this->belongsTo(Produk::class, 'id_produk', 'produk_id');
     }
+
+     // Relasi ke Detail Penjualan
+    public function penjualanDetails()
+    {
+        return $this->hasMany(PenjualanDetail::class, 'id_produk_level_harga');
+    }
 }
