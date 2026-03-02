@@ -67,9 +67,7 @@ class PenjualanDetailController extends Controller
     public function data($id)
     {
         $detail = PenjualanDetail::with([
-            'produk',
-            'levelHarga',
-            'satuan'
+            'produkLevelHarga.satuan'
         ])
             ->where('id_penjualan', $id)
             ->get();
@@ -94,7 +92,7 @@ class PenjualanDetailController extends Controller
             $row = array();
             $row['kode_produk'] = '<span class="label label-success">' . $item->produk['kode_produk'] . '</span>';
             $row['nama_produk'] = $item->produk['nama_produk'];
-            $row['harga_jual_eceran']  = 'Rp. ' . format_uang($item->harga_jual_eceran) . $item->satuan['id'];
+            $row['harga_jual_eceran']  = 'Rp. ' . format_uang($item->harga_jual_eceran) . ' (' . $item?->produkLevelHarga?->nama_level . ')'  . ' (' . $item?->produkLevelHarga?->satuan?->nama_satuan . ')';
             $row['jumlah']      = '<input type="number" class="form-control input-sm quantity" data-id="' . $item->id_penjualan_detail . '" value="' . $item->jumlah . '">';
             $diskonPersen = min($item->produk['diskon'] ?? 0, 100);
 
@@ -144,6 +142,7 @@ class PenjualanDetailController extends Controller
         $detail->id_penjualan = $request->id_penjualan;
         $detail->id_produk = $produk->id_produk;
         $detail->id_produk_level_harga = $request->id_produk_level_harga;
+        $detail->id_produk_level = $request->id_produk_level;
         $detail->harga_jual_eceran = $request->harga_jual;
         $detail->jumlah = 1;
         $detail->diskon = 0;
@@ -153,12 +152,40 @@ class PenjualanDetailController extends Controller
         return response()->json('Data berhasil disimpan', 200);
     }
 
+    // public function update(Request $request, $id)
+    // {
+    //     $detail = PenjualanDetail::find($id);
+    //     $detail->jumlah = (float) $request->jumlah;
+    //     $detail->subtotal = (float) $detail->harga_jual_eceran * (float) $request->jumlah;
+    //     $detail->update();
+    // }
+
     public function update(Request $request, $id)
     {
-        $detail = PenjualanDetail::find($id);
-        $detail->jumlah = (float) $request->jumlah;
-        $detail->subtotal = (float) $detail->harga_jual_eceran * (float) $request->jumlah;
-        $detail->update();
+        DB::transaction(function () use ($request, $id) {
+
+            $detail = PenjualanDetail::findOrFail($id);
+
+            $produk = Produk::where('id_produk', $detail->id_produk)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$produk) {
+                throw new \Exception('Produk tidak ditemukan');
+            }
+
+            $jumlahBaru = (float) $request->jumlah;
+
+            if ($jumlahBaru > $produk->stok) {
+                throw new \Exception('Stok tidak mencukupi. Sisa stok: ' . $produk->stok);
+            }
+
+            $detail->jumlah = $jumlahBaru;
+            $detail->subtotal = $detail->harga_jual_eceran * $jumlahBaru;
+            $detail->save();
+        });
+
+        return response()->json(['success' => true]);
     }
 
     public function destroy($id)

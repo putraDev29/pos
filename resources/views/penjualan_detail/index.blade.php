@@ -82,12 +82,13 @@ Transaksi Penjualan
                             <div class="input-group">
                                 <input type="hidden" name="id_penjualan" id="id_penjualan" value="{{ $id_penjualan }}">
                                 <input type="hidden" name="id_produk_level_harga" id="id_produk_level_harga">
+                                <input type="hidden" name="id_produk_level" id="id_produk_level">
                                 <input type="hidden" name="id_produk" id="id_produk">
                                 <input type="hidden" name="harga_type" id="harga_type">
                                 <input type="hidden" name="harga_jual" id="harga_jual">
                                 <input type="text" class="form-control" name="kode_produk" id="kode_produk">
                                 <span class="input-group-btn">
-                                    <button onclick="tampilProduk()" class="btn btn-info btn-flat" type="button"><i class="fa fa-arrow-right"></i></button>
+                                    <button onclick="tampilProduk()" style="background-color:#FFB703; border-color:#FFB703; color:#000;" class="btn btn-info btn-flat" type="button"><i class="fa fa-arrow-right"></i></button>
                                 </span>
                             </div>
                         </div>
@@ -111,7 +112,7 @@ Transaksi Penjualan
 
                 <div id="form-bayar-container" class="row">
                     <div class="col-lg-6">
-                        <div class="tampil-bayar bg-primary"></div>
+                       <div class="tampil-bayar" style="background-color: #FF8C00;"></div>
                         <div class="tampil-terbilang"></div>
                     </div>
                     <div class="col-lg-6">
@@ -196,7 +197,7 @@ Transaksi Penjualan
             </div>
 
             <div class="box-footer" id="box-footer">
-                <button type="submit" class="btn btn-primary btn-sm btn-flat pull-right btn-simpan"><i class="fa fa-floppy-o"></i> Simpan Transaksi</button>
+                <button type="submit" style="background-color:#FFB703; border-color:#FFB703; color:#000;" class="btn btn-primary btn-sm btn-flat pull-right btn-simpan"><i class="fa fa-floppy-o"></i> Simpan Transaksi</button>
             </div>
         </div>
     </div>
@@ -256,21 +257,39 @@ Transaksi Penjualan
         table2 = $('.table-produk').DataTable();
 
         $(document).on('input', '.quantity', function() {
-            let id = $(this).data('id');
-            let jumlah = parseInt($(this).val());
-            if (jumlah < 1 || jumlah > 10000) {
-                alert('Jumlah tidak valid');
-                return $(this).val(1);
-            }
 
-            $.post(`{{ url('/transaksi') }}/${id}`, {
-                '_token': $('[name=csrf-token]').attr('content'),
-                '_method': 'put',
-                'jumlah': jumlah
-            }).done(() => {
-                table.ajax.reload(() => loadForm($('#diskon').val()));
-            }).fail(() => alert('Tidak dapat menyimpan data'));
-        });
+    let id = $(this).data('id');
+    let stok = parseInt($(this).data('stok'));
+    let jumlah = parseInt($(this).val());
+
+    // Jika kosong atau 0 → tidak lakukan apa-apa
+    if (!jumlah || jumlah < 1) {
+        return;
+    }
+
+    // Batasi max input
+    if (jumlah > 10000) {
+        alert('Jumlah maksimal 10000');
+        return $(this).val(10000);
+    }
+
+    // Cek stok
+    if (jumlah > stok) {
+        alert('Stok tidak mencukupi. Sisa stok: ' + stok);
+        return $(this).val(stok);
+    }
+
+    $.post(`{{ url('/transaksi') }}/${id}`, {
+        '_token': $('[name=csrf-token]').attr('content'),
+        '_method': 'put',
+        'jumlah': jumlah
+    }).done(() => {
+        table.ajax.reload(() => loadForm($('#diskon').val()));
+    }).fail((xhr) => {
+        alert(xhr.responseJSON?.message ?? 'Tidak dapat menyimpan data');
+    });
+
+});
 
         $('#diskon').on('input', function() {
             if ($(this).val() == "") $(this).val(0).select();
@@ -335,7 +354,7 @@ Transaksi Penjualan
         }
     }
 
-    function pilihProduk(id, kode, type, harga_jual, id_produk_level_harga, idpembeliandetail) {
+    function pilihProduk(id, kode, type, harga_jual,id_produk_level, id_produk_level_harga, idpembeliandetail) {
         $('#id_produk').val(id);
         if (!$('#harga_type').length) {
             $('#form-produks').append(`<input type="hidden" name="harga_type" id="harga_type">`);
@@ -343,6 +362,7 @@ Transaksi Penjualan
         $('#harga_type').val(type);
         $('#harga_jual').val(harga_jual);
         $('#id_produk_level_harga').val(id_produk_level_harga);
+        $('#id_produk_level').val(id_produk_level);
         $('#id_pembelian_detail').val(idpembeliandetail);
         hideProduk();
         tambahProduk();

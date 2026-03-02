@@ -10,6 +10,15 @@ class Satuan extends Model
     use HasFactory;
 
     protected $table = 'satuan';
-    protected $primaryKey = 'i';
+    protected $primaryKey = 'id';
     protected $guarded = [];
+
+    public function produkLevelHarga()
+    {
+        return $this->hasMany(
+            ProdukHarga::class,
+            'satuan_id',
+            'id'
+        );
+    }
 }

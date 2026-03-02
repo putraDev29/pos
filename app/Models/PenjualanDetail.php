@@ -18,13 +18,18 @@ class PenjualanDetail extends Model
         return $this->hasOne(Produk::class, 'id_produk', 'id_produk');
     }
 
-    public function satuan()
+    public function penjualan()
     {
-        return $this->belongsTo(Satuan::class, 'satuan_id');
+        return $this->belongsTo(Penjualan::class, 'id_penjualan');
     }
 
-    public function levelHarga()
+
+    public function produkLevelHarga()
     {
-        return $this->belongsTo(ProdukHarga::class, 'id_produk_level_harga');
+        return $this->belongsTo(
+            ProdukHarga::class,
+            'id_produk_level_harga', // FK di tabel ini
+            'id'                     // PK di produk_level_harga
+        );
     }
 }

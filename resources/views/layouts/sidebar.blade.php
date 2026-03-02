@@ -39,10 +39,20 @@
                     <i class="fa fa-truck"></i> <span>Supplier</span>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('levelharga.index') }}">
+                    <i class="fa fa-caret-up"></i> <span>Level Harga</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('satuan.index') }}">
+                    <i class="fa fa-balance-scale"></i> <span>Satuan</span>
+                </a>
+            </li>
             <li class="header">TRANSAKSI</li>
             <li>
                 <a href="{{ route('pengeluaran.index') }}">
-                    <i class="fa fa-money"></i> <span>Pengeluaran</span>
+                    <i class="fa fa-arrow-down"></i> <span>Pengeluaran</span>
                 </a>
             </li>
             <li>
@@ -52,7 +62,7 @@
             </li>
             <li>
                 <a href="{{ route('pembelian.index') }}">
-                    <i class="fa fa-truck"></i> <span>Pembelian</span>
+                    <i class="fa fa-cart-plus"></i> <span>Pembelian</span>
                 </a>
             </li>
             <li>
@@ -67,8 +77,23 @@
             </li>
             <li class="header">REPORT</li>
             <li>
+                <a href="{{ route('laporanpembelian.index') }}">
+                    <i class="fa fa-file-text-o"></i> <span>Laporan Pembelian</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('laporan.index') }}">
-                    <i class="fa fa-file-pdf-o"></i> <span>Laporan</span>
+                    <i class="fa fa-line-chart"></i> <span>Laporan Penjualan</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('laporanlaba.index') }}">
+                    <i class="fa fa-money"></i> <span>Laporan Laba</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('laporanstok.index') }}">
+                    <i class="fa fa-building"></i> <span>Laporan Sisa Stock</span>
                 </a>
             </li>
             <li class="header">SYSTEM</li>

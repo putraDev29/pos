@@ -34,8 +34,6 @@ Daftar Produk
                             <th>Kategori</th>
                             <th>Merk</th>
                             <th>Harga Beli</th>
-                            <th>Harga Jual</th>
-                            <th>Harga Grosir</th>
                             <th>Diskon</th>
                             <th>Stok</th>
                             <th width="15%"><i class="fa fa-cog"></i></th>
@@ -84,13 +82,7 @@ Daftar Produk
                     data: 'merk'
                 },
                 {
-                    data: 'harga_beli'
-                },
-                {
-                    data: 'harga_jual_eceran'
-                },
-                {
-                    data: 'harga_jual_grosir'
+                    data: 'harga_beli_terakhir'
                 },
                 {
                     data: 'diskon'
@@ -125,7 +117,6 @@ Daftar Produk
                     $('#modal-form').modal('hide');
                     table.ajax.reload();
                     $('#form-loading').hide()
-                    resetForm()
                     // $('#modal-form button[type=submit]').prop('disabled', false)
                 },
                 error: function(errors) {
@@ -138,6 +129,15 @@ Daftar Produk
 
         $('[name=select_all]').on('click', function() {
             $(':checkbox').prop('checked', this.checked);
+        });
+
+        $('#modal-form').on('hidden.bs.modal', function() {
+
+            $('#modal-form form')[0].reset(); // reset seluruh form
+            $('#level-container').html('');
+            $('#preview-image').hide();
+            levelIndex = 0;
+
         });
     });
 
@@ -166,9 +166,7 @@ Daftar Produk
                 $('#modal-form [name=nama_produk]').val(response.nama_produk);
                 $('#modal-form [name=id_kategori]').val(response.id_kategori);
                 $('#modal-form [name=merk]').val(response.merk);
-                $('#modal-form [name=harga_beli]').val(response.harga_beli);
-                $('#modal-form [name=harga_jual_eceran]').val(response.harga_jual_eceran);
-                $('#modal-form [name=harga_jual_grosir]').val(response.harga_jual_grosir);
+                $('#modal-form [name=harga_beli_terakhir]').val(response.harga_beli_terakhir);
                 $('#modal-form [name=diskon]').val(response.diskon);
                 $('#modal-form [name=stok]').val(response.stok);
 
@@ -183,6 +181,9 @@ Daftar Produk
 
                         box.find(`select[name="level[${levelIndex}][satuan_id]"]`)
                             .val(level.satuan_id);
+
+                        box.find(`select[name="level[${levelIndex}][nama_level]"]`)
+                            .val(level.nama_level);
 
                         levelIndex++;
                     });

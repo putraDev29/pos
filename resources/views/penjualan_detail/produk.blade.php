@@ -153,10 +153,11 @@
                     '{{ $level->nama_level }}',
                     '{{ $level->harga_jual }}',
                     '{{ $level->satuan_id }}',
+                    '{{ $level->id }}',
                 )">
 
                                     <span class="price-level">
-                                        {{ ucfirst($level->nama_level) }}
+                                        {{ ucfirst($level->nama_level) }} ({{ ucfirst($level->satuan->nama_satuan) }})
                                     </span>
 
                                     <span class="price-value">

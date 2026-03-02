@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Laporan Penjualan</title>
+    <title>Laporan Sisa Stok</title>
 
     <link rel="stylesheet" href="{{ asset('/AdminLTE-2/bower_components/bootstrap/dist/css/bootstrap.min.css') }}">
 </head>
 <body>
-    <h3 class="text-center">Laporan Penjualan</h3>
+    <h3 class="text-center">Laporan Sisa Stok</h3>
     <h4 class="text-center">
         Tanggal {{ tanggal_indonesia($awal, false) }}
         s/d
@@ -20,10 +20,11 @@
         <thead>
             <tr>
                 <th width="5%">No</th>
-                <th>Tanggal</th>
+                <th>Kode Produk</th>
                 <th>Nama Produk</th>
-                <th>Total Terjual</th>
-                <th>Total Penjualan</th>
+                <th>Stok Awal</th>
+                <th>Masuk</th>
+                <th>Keluar</th>
             </tr>
         </thead>
         <tbody>

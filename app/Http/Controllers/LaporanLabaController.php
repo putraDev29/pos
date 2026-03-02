@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use PDF;
 
-class LaporanController extends Controller
+class LaporanLabaController extends Controller
 {
     public function index(Request $request)
     {
@@ -21,35 +21,37 @@ class LaporanController extends Controller
             $tanggalAkhir = $request->tanggal_akhir;
         }
 
-        return view('laporan.index', compact('tanggalAwal', 'tanggalAkhir'));
+        return view('laporanlaba.index', compact('tanggalAwal', 'tanggalAkhir'));
     }
 
     public function getData($awal, $akhir)
     {
-
         $no = 1;
         $data = [];
-        $total_penjualan_semua = 0;
+        $total_laba_semua = 0;
+
         $awal  = date('Y-m-d', strtotime($awal));
         $akhir = date('Y-m-d', strtotime($akhir));
 
         $results = DB::table('penjualan_detail as pd')
             ->join('penjualan as p', 'pd.id_penjualan', '=', 'p.id_penjualan')
             ->join('produk as pr', 'pd.id_produk', '=', 'pr.id_produk')
+            ->join('stok_barang as sb', 'pd.id_produk', '=', 'sb.id_produk')
             ->selectRaw("
             DATE(p.created_at) as tanggal,
             pr.nama_produk,
             SUM(pd.jumlah) as total_terjual,
-            SUM(pd.subtotal) as total_penjualan
+            SUM(pd.subtotal) as total_penjualan,
+            SUM((pd.harga_jual_eceran - sb.harga_beli) * pd.jumlah) as laba
         ")
-            ->whereRaw("DATE(p.created_at) BETWEEN ? AND ?", [$awal, $akhir])
+            ->whereBetween('p.created_at', [$awal . ' 00:00:00', $akhir . ' 23:59:59'])
             ->groupBy(DB::raw('DATE(p.created_at)'), 'pr.nama_produk')
-            ->orderBy(DB::raw('DATE(p.created_at)'), 'desc')
+            ->orderBy('tanggal', 'desc')
             ->get();
 
         foreach ($results as $row) {
 
-            $total_penjualan_semua += $row->total_penjualan;
+            $total_laba_semua += $row->laba;
 
             $data[] = [
                 'DT_RowIndex'     => $no++,
@@ -57,21 +59,23 @@ class LaporanController extends Controller
                 'produk'          => $row->nama_produk,
                 'total_terjual'   => $row->total_terjual,
                 'total_penjualan' => format_uang($row->total_penjualan),
+                'laba'            => format_uang($row->laba),
             ];
         }
 
-        // ✅ Baris Total (text di kolom Total Terjual)
+        // Total Laba
         $data[] = [
             'DT_RowIndex'     => '',
             'tanggal'         => '',
             'produk'          => '',
-            'total_terjual'   => 'Total Penjualan',
-            'total_penjualan' => format_uang($total_penjualan_semua),
+            'total_terjual'   => '',
+            'total_penjualan' => 'Total Laba',
+            'laba'            => format_uang($total_laba_semua),
         ];
 
         return $data;
     }
-
+    
     public function data($awal, $akhir)
     {
         $data = $this->getData($awal, $akhir);
@@ -87,6 +91,6 @@ class LaporanController extends Controller
         $pdf  = PDF::loadView('laporan.pdf', compact('awal', 'akhir', 'data'));
         $pdf->setPaper('a4', 'potrait');
 
-        return $pdf->stream('Laporan-pendapatan-' . date('Y-m-d-his') . '.pdf');
+        return $pdf->stream('Laporan-laba-' . date('Y-m-d-his') . '.pdf');
     }
 }

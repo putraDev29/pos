@@ -28,6 +28,7 @@
             @csrf
             <input type="hidden" name="_method" id="method-field" value="POST">
             <input type="hidden" name="id_produk" id="id_produk">
+            <input type="hidden" name="stok" id="stok">
 
             <div class="modal-content">
                 <div class="modal-header">
@@ -68,7 +69,7 @@
                     </div> -->
 
                     <hr>
-                    <h4>Level Hargas</h4>
+                    <h4>Level Harga</h4>
 
                     <div id="level-container"></div>
 
@@ -114,10 +115,14 @@
 
                 <div class="col-md-3">
                     <label>Nama Level</label>
-                    <input type="text" name="level[${index}][nama_level]"
-                        class="form-control"
-                        value="${data ? data.nama_level : ''}"
-                        required>
+                    <select name="level[${index}][nama_level]" class="form-control" required>
+                        <option value="">Pilih Satuan</option>
+                        @foreach($levelharga as $item)
+                            <option value="{{ $item->nama_level }}">
+                                {{ $item->nama_level }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div class="col-md-3">
@@ -170,13 +175,6 @@
             e.target.closest('.level-box').remove();
         }
     });
-
-    function resetForm() {
-        document.getElementById('form-produk').reset();
-        document.getElementById('level-container').innerHTML = '';
-        document.getElementById('preview-image').style.display = 'none';
-        levelIndex = 0;
-    }
 
     // =====================
     // Preview Gambar

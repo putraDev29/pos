@@ -4,6 +4,10 @@ use App\Http\Controllers\{
     DashboardController,
     KategoriController,
     LaporanController,
+    LaporanLabaController,
+    LaporanPembelianController,
+    LaporanStokController,
+    LevelhargaController,
     ProdukController,
     MemberController,
     PengeluaranController,
@@ -13,6 +17,7 @@ use App\Http\Controllers\{
     PenjualanDetailController,
     SettingController,
     SupplierController,
+    SatuanController,
     UserController,
 };
 use Illuminate\Support\Facades\Route;
@@ -51,6 +56,12 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/supplier/data', [SupplierController::class, 'data'])->name('supplier.data');
         Route::resource('/supplier', SupplierController::class);
 
+        Route::get('/levelharga/data', [LevelhargaController::class, 'data'])->name('levelharga.data');
+        Route::resource('/levelharga', LevelhargaController::class);
+
+        Route::get('/satuan/data', [SatuanController::class, 'data'])->name('satuan.data');
+        Route::resource('/satuan', SatuanController::class);
+
         Route::get('/pengeluaran/data', [PengeluaranController::class, 'data'])->name('pengeluaran.data');
         Route::resource('/pengeluaran', PengeluaranController::class);
 
@@ -88,6 +99,18 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/laporan/data/{awal}/{akhir}', [LaporanController::class, 'data'])->name('laporan.data');
         Route::get('/laporan/pdf/{awal}/{akhir}', [LaporanController::class, 'exportPDF'])->name('laporan.export_pdf');
 
+        Route::get('/laporanlaba', [LaporanLabaController::class, 'index'])->name('laporanlaba.index');
+        Route::get('/laporanlaba/data/{awal}/{akhir}', [LaporanLabaController::class, 'data'])->name('laporanlaba.data');
+        Route::get('/laporanlaba/pdf/{awal}/{akhir}', [LaporanLabaController::class, 'exportPDF'])->name('laporanlaba.export_pdf');
+
+        Route::get('/laporanstok', [LaporanStokController::class, 'index'])->name('laporanstok.index');
+        Route::get('/laporanstok/data/{awal}/{akhir}', [LaporanStokController::class, 'data'])->name('laporanstok.data');
+        Route::get('/laporanstok/pdf/{awal}/{akhir}', [LaporanStokController::class, 'exportPDF'])->name('laporanstok.export_pdf');
+
+        Route::get('/laporanpembelian', [LaporanPembelianController::class, 'index'])->name('laporanpembelian.index');
+        Route::get('/laporanpembelian/data/{awal}/{akhir}', [LaporanPembelianController::class, 'data'])->name('laporanpembelian.data');
+        Route::get('/laporanpembelian/pdf/{awal}/{akhir}', [LaporanPembelianController::class, 'exportPDF'])->name('laporanpembelian.export_pdf');
+
         Route::get('/user/data', [UserController::class, 'data'])->name('user.data');
         Route::resource('/user', UserController::class);
 
@@ -95,7 +118,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/setting/first', [SettingController::class, 'show'])->name('setting.show');
         Route::post('/setting', [SettingController::class, 'update'])->name('setting.update');
     });
- 
+
     Route::group(['middleware' => 'level:1,2'], function () {
         Route::get('/profil', [UserController::class, 'profil'])->name('user.profil');
         Route::post('/profil', [UserController::class, 'updateProfil'])->name('user.update_profil');

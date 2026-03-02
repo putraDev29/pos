@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Pembelian;
 use App\Models\PembelianDetail;
 use App\Models\Produk;
+use App\Models\ProdukHarga;
 use App\Models\StokBarang;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ class PembelianDetailController extends Controller
     public function index()
     {
         $id_pembelian = session('id_pembelian');
-        $produk = Produk::orderBy('nama_produk')->get();
+        $produk = Produk::orderBy('id_produk')->get();
         $supplier = Supplier::find(session('id_supplier'));
         $diskon = Pembelian::find($id_pembelian)->diskon ?? 0;
 
@@ -31,23 +32,93 @@ class PembelianDetailController extends Controller
         $detail = PembelianDetail::with('produk')
             ->where('id_pembelian', $id)
             ->get();
+
         $data = array();
         $total = 0;
         $total_item = 0;
 
+
         foreach ($detail as $item) {
+
+            $satuan = ProdukHarga::with('satuan')
+                ->where('produk_id', $item->id_produk)
+                ->get();
+
+            $satuanOptions = '';
+            $usedSatuan = []; // 🔒 penanda nama satuan yang sudah muncul
+
+            foreach ($satuan as $s) {
+
+                $namaSatuan = $s->satuan->nama_satuan;
+
+                // ❌ skip jika nama satuan sudah pernah ditampilkan
+                if (in_array($namaSatuan, $usedSatuan)) {
+                    continue;
+                }
+
+                $usedSatuan[] = $namaSatuan;
+
+                $selected = ($item->produk_id ?? null) == $s->id ? 'selected' : '';
+
+                $satuanOptions .= '
+        <option 
+            value="' . $s->satuan_id . '"
+            data-konversi="' . $s->konversi . '"
+            data-harga="' . $s->harga . '"
+            ' . $selected . '>
+            ' . $namaSatuan . '
+        </option>
+    ';
+            }
+
             $row = array();
-            $row['kode_produk'] = '<span class="label label-success">' . $item->produk['kode_produk'] . '</span';
+
+            $row['kode_produk'] =
+                '<span class="label label-success kode-produk" ' .
+                'data-id="' . $item->id_pembelian_detail . '">' .
+                e($item->produk['nama_produk']) .
+                '</span>';
+
             $row['nama_produk'] = $item->produk['nama_produk'];
-            $row['harga_beli']  = '<input type="number" class="form-control input-sm harga" data-id="' . $item->id_pembelian_detail . '" value="' . $item->harga_beli . '">';
-            $row['jumlah']      = '<input type="number" class="form-control input-sm quantity" data-id="' . $item->id_pembelian_detail . '" value="' . $item->jumlah . '">';
-            $row['subtotal']    = 'Rp. ' . format_uang($item->subtotal);
-            $row['aksi']        = '<div class="btn-group">
-                                    <button onclick="deleteData(`' . route('pembelian_detail.destroy', $item->id_pembelian_detail) . '`)" class="btn btn-xs btn-danger btn-flat"><i class="fa fa-trash"></i></button>
-                                </div>';
+
+            // ✅ Kolom harga beli (TERPISAH)
+            $row['harga_beli'] = '
+        <input type="text" 
+            class="form-control input-sm harga" 
+            data-id="' . $item->id_pembelian_detail . '" 
+            value="' . 0 . '">
+    ';
+
+            // ✅ Kolom satuan (TERPISAH)
+            $row['satuan'] = '
+        <select class="form-control input-sm satuan" 
+            data-id="' . $item->id_pembelian_detail . '">
+            ' . $satuanOptions . '
+        </select>
+    ';
+
+            $row['jumlah'] = '
+        <input type="text" 
+            class="form-control input-sm quantity" 
+            data-id="' . $item->id_pembelian_detail . '" 
+            value="' . $item->jumlah . '">
+    ';
+
+            $row['subtotal'] = 'Rp. ' . format_uang($item->subtotal);
+
+            $row['aksi'] = '
+        <div class="btn-group">
+            <button onclick="deleteData(`'
+                . route('pembelian_detail.destroy', $item->id_pembelian_detail) .
+                '`)" class="btn btn-xs btn-danger btn-flat">
+                <i class="fa fa-trash"></i>
+            </button>
+        </div>
+    ';
+
             $data[] = $row;
 
-            $total += $item->harga_beli * $item->jumlah;
+            $total += $item->subtotal;
             $total_item += $item->jumlah;
         }
         $data[] = [
@@ -56,6 +127,7 @@ class PembelianDetailController extends Controller
                 <div class="total_item hide">' . $total_item . '</div>',
             'nama_produk' => '',
             'harga_beli'  => '',
+            'satuan'      => '',
             'jumlah'      => '',
             'subtotal'    => '',
             'aksi'        => '',
@@ -64,7 +136,7 @@ class PembelianDetailController extends Controller
         return datatables()
             ->of($data)
             ->addIndexColumn()
-            ->rawColumns(['aksi', 'kode_produk', 'harga_beli', 'jumlah'])
+            ->rawColumns(['aksi', 'kode_produk', 'harga_beli', 'jumlah', 'satuan'])
             ->make(true);
     }
 
@@ -75,12 +147,16 @@ class PembelianDetailController extends Controller
             return response()->json('Data gagal disimpan', 400);
         }
 
+        $hargabeli = StokBarang::where('id_produk', $request->id_produk)
+            ->latest('id')
+            ->first();
+
         $detail = new PembelianDetail();
         $detail->id_pembelian = $request->id_pembelian;
         $detail->id_produk = $produk->id_produk;
-        $detail->harga_beli = $produk->harga_beli;
+        $detail->harga_beli = $hargabeli->harga_beli ?? 0;
         $detail->jumlah = 1;
-        $detail->subtotal = $produk->harga_beli;
+        $detail->subtotal = 0;
         $detail->save();
 
         return response()->json('Data berhasil disimpan', 200);
@@ -88,22 +164,36 @@ class PembelianDetailController extends Controller
 
     // public function store(Request $request)
     // {
-        
+
     // }
-    
+
     public function update(Request $request, $id)
     {
         $detail = PembelianDetail::findOrFail($id);
 
-        if($request->harga_beli){
-            $detail->harga_beli = $request->harga_beli;
-        }
+     
+        // 🔥 Ambil satuan yang dipilih user
+        $produkHarga = ProdukHarga::with('satuan')
+            ->where('satuan_id', $request->satuan_id)
+            ->where('produk_id', $detail->id_produk)
+            ->first();
 
-        if($request->jumlah){
-            $detail->jumlah = $request->jumlah;
-        }
+        $konversi = $produkHarga->konversi;
 
-        $detail->subtotal = $detail->harga_beli * $detail->jumlah;
+        // ✅ Simpan satuan aktif
+        $detail->id_produk = $produkHarga->produk_id;
+
+        // ✅ Update harga sesuai satuan
+        $detail->harga_beli = $request->harga_beli;
+
+        // ✅ Simpan jumlah dalam satuan terkecil
+        $jumlahInput = $request->jumlah;
+        $detail->jumlah = (int) ($jumlahInput * $konversi);
+        // var_dump($jumlahInput);
+
+        // ✅ Hitung subtotal berdasarkan qty tampilan
+        $detail->subtotal = $request->harga_beli * $jumlahInput;
+
         $detail->save();
 
         return response()->json('ok');

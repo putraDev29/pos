@@ -18,9 +18,28 @@ class ProdukHarga extends Model
         return $this->belongsTo(Produk::class, 'id_produk', 'produk_id');
     }
 
-     // Relasi ke Detail Penjualan
+    // Relasi ke Detail Penjualan
     public function penjualanDetails()
     {
         return $this->hasMany(PenjualanDetail::class, 'id_produk_level_harga');
     }
+
+    public function satuan()
+    {
+        return $this->belongsTo(
+            Satuan::class,
+            'satuan_id', // FK di tabel ini
+            'id'         // PK di satuan
+        );
+    }
+
+    public function penjualanDetail()
+    {
+        return $this->hasMany(
+            PenjualanDetail::class,
+            'id_produk_level_harga',
+            'satuan_id'
+        );
+    }
+
 }

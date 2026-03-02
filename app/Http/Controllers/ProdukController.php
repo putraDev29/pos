@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kategori;
+use App\Models\LevelHarga;
 use App\Models\Produk;
 use App\Models\ProdukHarga;
 use App\Models\Satuan;
@@ -16,8 +17,11 @@ class ProdukController extends Controller
     {
         $kategori = Kategori::all()->pluck('nama_kategori', 'id_kategori');
         $satuan   = Satuan::orderBy('nama_satuan')->get();
+        $levelharga = LevelHarga::with('satuan')
+            ->orderBy('nama_level')
+            ->get();
 
-        return view('produk.index', compact('kategori', 'satuan'));
+        return view('produk.index', compact('kategori', 'satuan', 'levelharga'));
     }
 
     public function data()
@@ -86,17 +90,21 @@ class ProdukController extends Controller
 
         try {
 
-            $request->validate([
-                'nama_produk' => 'required',
-                'id_kategori' => 'required',
-                'harga_beli'  => 'required|numeric',
-                'stok'        => 'required|numeric',
-                'satuan_id'   => 'required'
-            ]);
+            // $request->validate([
+            //     'nama_produk' => 'required',
+            //     'id_kategori' => 'required',
+            //     'harga_beli'  => 'required|numeric',
+            //     'stok'        => 'required|numeric',
+            //     'satuan_id'   => 'required'
+            // ]);
+
+            $produkLast = Produk::latest()->first() ?? new Produk();
+            $kodeProduk = 'P' . tambah_nol_didepan(optional($produkLast)->id_produk + 1, 6);
 
             $produk = Produk::create([
                 'nama_produk' => $request->nama_produk,
                 'id_kategori' => $request->id_kategori,
+                'kode_produk'  => $kodeProduk,
                 'merk'        => $request->merk,
                 'harga_beli'  => $request->harga_beli,
                 'stok'        => $request->stok,

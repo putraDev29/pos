@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LevelHarga;
 use App\Models\Penjualan;
 use App\Models\PenjualanDetail;
 use App\Models\Produk;
+use App\Models\ProdukHarga;
 use App\Models\Setting;
 use App\Models\StokBarang;
+use Database\Seeders\ProdukSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use PDF;
@@ -77,6 +80,7 @@ class PenjualanController extends Controller
 
     public function store(Request $request)
     {
+
         try {
 
             DB::transaction(function () use ($request) {
@@ -103,7 +107,9 @@ class PenjualanController extends Controller
                         'diskon' => $request->diskon
                     ]);
 
-                    $sisaAmbil = $item->jumlah;
+                    $level = ProdukHarga::where('id', $item->id_produk_level_harga)->firstOrFail();
+                    $stokKeluar = $item->jumlah * $level->konversi;
+                    $sisaAmbil = $item->jumlah * $level->konversi;
 
                     // Ambil stok FIFO
                     $stokList = StokBarang::where('id_produk', $item->id_produk)
@@ -139,8 +145,8 @@ class PenjualanController extends Controller
 
                     // Kurangi total stok produk (atomic)
                     Produk::where('id_produk', $item->id_produk)
-                        ->where('stok', '>=', $item->jumlah)
-                        ->decrement('stok', $item->jumlah);
+                        ->where('stok', '>=', $stokKeluar)
+                        ->decrement('stok', $stokKeluar);
                 }
             });
 
@@ -158,7 +164,10 @@ class PenjualanController extends Controller
 
     public function show($id)
     {
-        $detail = PenjualanDetail::with('produk')->where('id_penjualan', $id)->get();
+        $detail = PenjualanDetail::with([
+            'produk',
+            'produkLevelHarga.satuan'
+        ])->where('id_penjualan', $id)->get();
 
         return datatables()
             ->of($detail)
@@ -170,8 +179,8 @@ class PenjualanController extends Controller
                 return $detail->produk->nama_produk;
             })
             ->addColumn('harga_jual_eceran', function ($detail) {
-                $label = $detail->harga_jual_eceran == $detail->produk->harga_jual_grosir ? ' (Grosir)' : ' (Eceran)';
-                return 'Rp. ' . format_uang($detail->harga_jual_eceran) . $label;
+                $label = $detail->produkLevelHarga->nama_level;
+                return 'Rp. ' . format_uang($detail->harga_jual_eceran) .  ' (' .  $label . ')';
             })
             ->addColumn('jumlah', function ($detail) {
                 return format_uang($detail->jumlah);
