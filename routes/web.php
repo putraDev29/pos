@@ -15,6 +15,7 @@ use App\Http\Controllers\{
     PembelianDetailController,
     PenjualanController,
     PenjualanDetailController,
+    ProdukTerlakuController,
     SettingController,
     SupplierController,
     SatuanController,
@@ -110,6 +111,10 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/laporanpembelian', [LaporanPembelianController::class, 'index'])->name('laporanpembelian.index');
         Route::get('/laporanpembelian/data/{awal}/{akhir}', [LaporanPembelianController::class, 'data'])->name('laporanpembelian.data');
         Route::get('/laporanpembelian/pdf/{awal}/{akhir}', [LaporanPembelianController::class, 'exportPDF'])->name('laporanpembelian.export_pdf');
+
+        Route::get('/produkterlaku', [ProdukTerlakuController::class, 'index'])->name('produkterlaku.index');
+        Route::get('/produkterlaku/data/{awal}/{akhir}', [ProdukTerlakuController::class, 'data'])->name('produkterlaku.data');
+        Route::get('/produkterlaku/pdf/{awal}/{akhir}', [ProdukTerlakuController::class, 'exportPDF'])->name('produkterlaku.export_pdf');
 
         Route::get('/user/data', [UserController::class, 'data'])->name('user.data');
         Route::resource('/user', UserController::class);

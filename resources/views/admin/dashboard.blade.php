@@ -38,7 +38,7 @@
             <div class="icon">
                 <i class="fa fa-cubes"></i>
             </div>
-            <a href="{{ route('produk.index') }}" class="small-box-footer">Lihat <i class="fa fa-arrow-circle-right"></i></a>
+            <a href="{{ route('produkterlaku.index') }}" class="small-box-footer">Lihat <i class="fa fa-arrow-circle-right"></i></a>
         </div>
     </div>
     <!-- ./col -->
@@ -46,14 +46,14 @@
         <!-- small box -->
         <div class="small-box bg-yellow">
             <div class="inner">
-                <h3>{{ $member }}</h3>
+                <h3>{{ '10' }}</h3>
 
-                <p>Total Member</p>
+                <p>Produk Terlaris</p>
             </div>
             <div class="icon">
-                <i class="fa fa-id-card"></i>
+                <i class="fa fa-fire"></i>
             </div>
-            <a href="{{ route('member.index') }}" class="small-box-footer">Lihat <i class="fa fa-arrow-circle-right"></i></a>
+            <a href="{{ route('produkterlaku.index') }}" class="small-box-footer">Lihat <i class="fa fa-arrow-circle-right"></i></a>
         </div>
     </div>
     <!-- ./col -->
@@ -103,37 +103,42 @@
 @endsection
 
 @push('scripts')
-<!-- ChartJS -->
 <script src="{{ asset('AdminLTE-2/bower_components/chart.js/Chart.js') }}"></script>
+
 <script>
 $(function() {
-    // Get context with jQuery - using jQuery's .get() method.
-    var salesChartCanvas = $('#salesChart').get(0).getContext('2d');
-    // This will get the first returned node in the jQuery collection.
-    var salesChart = new Chart(salesChartCanvas);
 
-    var salesChartData = {
-        labels: {{ json_encode($data_tanggal) }},
-        datasets: [
-            {
-                label: 'Pendapatan',
-                fillColor           : 'rgba(60,141,188,0.9)',
-                strokeColor         : 'rgba(60,141,188,0.8)',
-                pointColor          : '#3b8bba',
-                pointStrokeColor    : 'rgba(60,141,188,1)',
-                pointHighlightFill  : '#fff',
-                pointHighlightStroke: 'rgba(60,141,188,1)',
-                data: {{ json_encode($data_pendapatan) }}
-            }
-        ]
+    var labels = {!! json_encode($data_tanggal) !!};
+    var laba   = {!! json_encode($data_pendapatan) !!};
+
+    // Paksa semua jadi number (ChartJS v1 butuh number)
+    laba = laba.map(function(item) {
+        return Number(item);
+    });
+
+    var ctx = document.getElementById("salesChart").getContext("2d");
+
+    var data = {
+        labels: labels,
+        datasets: [{
+            label: "Laba",
+            fillColor: "rgba(60,141,188,0.9)",
+            strokeColor: "rgba(60,141,188,0.8)",
+            pointColor: "#3b8bba",
+            pointStrokeColor: "#fff",
+            pointHighlightFill: "#fff",
+            pointHighlightStroke: "rgba(60,141,188,1)",
+            data: laba
+        }]
     };
 
-    var salesChartOptions = {
-        pointDot : false,
-        responsive : true
+    var options = {
+        responsive: true,
+        maintainAspectRatio: false
     };
 
-    salesChart.Line(salesChartData, salesChartOptions);
+    new Chart(ctx).Line(data, options);
+
 });
 </script>
 @endpush

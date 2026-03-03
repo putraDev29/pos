@@ -10,37 +10,56 @@ use App\Models\Penjualan;
 use App\Models\Produk;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index()
     {
         $kategori = Kategori::count();
-        $produk = Produk::count();
+        $produk   = Produk::count();
         $supplier = Supplier::count();
-        $member = Member::count();
+        $member   = Member::count();
 
-        $tanggal_awal = date('Y-m-01');
+        $tanggal_awal  = date('Y-m-01');
         $tanggal_akhir = date('Y-m-d');
 
-        $data_tanggal = array();
-        $data_pendapatan = array();
+        $data_tanggal    = [];
+        $data_pendapatan = [];
+        $total_laba_semua = 0;
 
-        while (strtotime($tanggal_awal) <= strtotime($tanggal_akhir)) {
-            $data_tanggal[] = (int) substr($tanggal_awal, 8, 2);
+        $results = DB::table('penjualan_detail as pd')
+            ->join('penjualan as p', 'pd.id_penjualan', '=', 'p.id_penjualan')
+            ->leftJoin('stok_barang as sb', 'pd.id_produk', '=', 'sb.id_produk')
+            ->selectRaw("
+        DATE(p.created_at) as tanggal,
+        SUM((pd.harga_jual_eceran - COALESCE(sb.harga_beli,0)) * pd.jumlah) as laba
+    ")
+            ->whereBetween('p.created_at', [
+                $tanggal_awal . ' 00:00:00',
+                $tanggal_akhir . ' 23:59:59'
+            ])
+            ->groupBy(DB::raw('DATE(p.created_at)'))
+            ->orderBy('tanggal', 'asc')
+            ->get();
 
-            $total_penjualan = Penjualan::where('created_at', 'LIKE', "%$tanggal_awal%")->sum('bayar');
-            $total_pembelian = Pembelian::where('created_at', 'LIKE', "%$tanggal_awal%")->sum('bayar');
-            $total_pengeluaran = Pengeluaran::where('created_at', 'LIKE', "%$tanggal_awal%")->sum('nominal');
+        foreach ($results as $row) {
 
-            $pendapatan = $total_penjualan - $total_pembelian - $total_pengeluaran;
-            $data_pendapatan[] += $pendapatan;
-
-            $tanggal_awal = date('Y-m-d', strtotime("+1 day", strtotime($tanggal_awal)));
+            $data_tanggal[]    = date('d', strtotime($row->tanggal));
+            $data_pendapatan[] = $row->laba;
         }
 
         if (auth()->user()->level == 1) {
-            return view('admin.dashboard', compact('kategori', 'produk', 'supplier', 'member', 'tanggal_awal', 'tanggal_akhir', 'data_tanggal', 'data_pendapatan'));
+            return view('admin.dashboard', compact(
+                'kategori',
+                'produk',
+                'supplier',
+                'member',
+                'tanggal_awal',
+                'tanggal_akhir',
+                'data_tanggal',
+                'data_pendapatan'
+            ));
         } else {
             return view('kasir.dashboard');
         }
